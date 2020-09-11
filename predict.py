@@ -19,9 +19,7 @@ parser.add_argument("--backbone", type=str, default="resnet18", help="resnet18, 
 parser.add_argument("--load_model", type=str, default="", help="path to load trained model")
 parser.add_argument("--classes", type=int, default=20, help="default number of classes")
 parser.add_argument("--max_objects", type=int, default=50, help="default number of classes")
-parser.add_argument(
-    "--iou_threshold", type=int, default=0.6, help="for deciding whether boxes overlap too much with respect to IOU"
-)
+parser.add_argument("--iou_threshold", type=int, default=0.6, help="for deciding whether boxes overlap too much with respect to IOU")
 parser.add_argument("--score_threshold", type=int, default=0.1, help="when to remove boxes based on score.")
 args = parser.parse_args()
 
@@ -29,11 +27,16 @@ args = parser.parse_args()
 image_size = args.image_size
 labels = args.classes
 max_objects = args.max_objects
+# max_objects = 5
 config = ModelConfig(image_size, labels, max_objects)
 batch_size = args.batch_size
 colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for i in range(labels)]
 
-backbone = XModelBackbone[args.backbone.upper()]
+arg_backbone = 'resnet18'
+if args.backbone:
+    arg_backbone = arg_backbone
+
+backbone = XModelBackbone[arg_backbone.upper()]
 model_type = XModelType[args.model_type.upper()]
 mode = XModelMode[args.model_mode.upper()]
 
@@ -44,7 +47,7 @@ if args.load_model:
 else:
     print("No model was loaded! Please specify your saved model!")
 
-model.summary()
+#model.summary()
 model.compile()
 
 # create prediction model
@@ -54,8 +57,16 @@ pred_model = tf.keras.Model(inputs=model.input, outputs=decoded, name="predictio
 model.trainable = False
 pred_model.trainable = False
 
+# check input image
+arg_input_image = './asset/t01.jpg'
+if args.load_model:
+    arg_input_image = args.image_path
+
+print("arg_input_image : ", arg_input_image)
+
 # load image
-image = cv2.imread(args.image_path)
+# image = cv2.imread(args.image_path)
+image = cv2.imread(arg_input_image)
 image = cv2.resize(image, (args.image_size, args.image_size))
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -97,8 +108,10 @@ for box, label, score in zip(selected_boxes, selected_labels, selected_scores):
     cv2.rectangle(image, (box[1], box[0]), (box[3], box[2]), colors[label], 2)
 
 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-file = "result.jpg"
-cv2.imwrite(file, image)
+cv2.imshow('img', image)
+cv2.waitKey(0)
+# file = "result.jpg"
+# cv2.imwrite(file, image)
 
-print()
-print(f"Image with bounding boxes saved to {file} file.")
+# print()
+# print(f"Image with bounding boxes saved to {file} file.")
